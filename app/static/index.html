@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MV Derby Planner</title>
+<meta name="theme-color" content="#1b3a57">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="title">
+    <h1>Derby planner</h1>
+    <p id="status" class="status">Loading…</p>
+  </div>
+  <button id="themeBtn" class="iconbtn" aria-label="Toggle night mode" title="Night mode">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 15.5A8.5 8.5 0 0 1 8.5 4a8.5 8.5 0 1 0 11.5 11.5Z" fill="currentColor"/></svg>
+  </button>
+</header>
+
+<div id="special" class="special" hidden></div>
+
+<main>
+  <section id="tab-now" class="tab" aria-labelledby="t-now">
+    <div class="when">
+      <label>Day <select id="nowDay"></select></label>
+      <label>Time <select id="nowTime"></select></label>
+      <button id="nowReset" class="link">Now</button>
+    </div>
+    <div id="water" class="water"></div>
+    <div class="filters" role="group" aria-label="Filter spots">
+      <button data-mode="all" class="chip on">All</button>
+      <button data-mode="shore" class="chip">Shore</button>
+      <button data-mode="boat" class="chip">Boat</button>
+    </div>
+    <ol id="ranked" class="ranked"></ol>
+  </section>
+
+  <section id="tab-plan" class="tab" hidden aria-labelledby="t-plan">
+    <div id="planDays" class="daychips" role="tablist"></div>
+    <h2 class="sec">Best windows</h2>
+    <ul id="windows" class="windows"></ul>
+    <h2 class="sec">Every spot, every half hour</h2>
+    <p class="hint">Darker = better. Tap a cell for the reasoning.</p>
+    <div class="gridwrap"><table id="grid" class="grid"></table></div>
+  </section>
+
+  <section id="tab-tides" class="tab" hidden aria-labelledby="t-tides">
+    <div id="tideDays" class="daychips" role="tablist"></div>
+    <div id="tideTables"></div>
+  </section>
+
+  <section id="tab-wind" class="tab" hidden aria-labelledby="t-wind">
+    <div id="windDays" class="daychips" role="tablist"></div>
+    <div id="windTable"></div>
+    <div id="marine"></div>
+    <div id="windy" class="windy"></div>
+  </section>
+
+  <section id="tab-chart" class="tab" hidden aria-labelledby="t-chart">
+    <div id="chartBox" class="chartbox" tabindex="0" aria-label="Chart. Drag to pan, pinch or scroll to zoom.">
+      <div id="chartInner" class="chartinner">
+        <img id="chartImg" src="/chart.webp" alt="NOAA chart of Martha's Vineyard" draggable="false">
+        <div id="markers"></div>
+      </div>
+    </div>
+    <div class="chartbar">
+      <button id="zoomIn" class="iconbtn" aria-label="Zoom in">+</button>
+      <button id="zoomOut" class="iconbtn" aria-label="Zoom out">−</button>
+      <button id="locate" class="chip">Show me</button>
+      <a class="chip" href="/chart.pdf">Full chart PDF</a>
+    </div>
+    <div id="spotCard" class="spotcard" hidden></div>
+  </section>
+
+  <section id="tab-gear" class="tab" hidden aria-labelledby="t-gear">
+    <div class="gear">
+      <h2>Bonito <span>21″</span></h2>
+      <p>X-Rap 08 Crystal Shad on the lightest rod, twitch-pause. Hogy anchovy epoxy on rod two, burned. Albie Snax rigged and boxed for when they refuse hard baits.</p>
+      <h2>False albacore <span>25″, 4 per badge</span></h2>
+      <p>Same kit. Pink or anchovy epoxy, crank as fast as you can. Any albie you bring to the scale counts against the four.</p>
+      <h2>Bluefish <span>22″</span></h2>
+      <p>Poppers, metal-lips, Kastmasters. Wire or 60–80 lb fluoro. Chunk bait on circle hooks for the parked rod.</p>
+      <h2>Leader and knots</h2>
+      <p>15 lb Blue Label to start, 3–4 ft. Drop to 12 if you see fish follow and turn off. FG to the braid, Alberto as the backup. Loop knot at the lure. Wet every knot.</p>
+      <h2>Snax rigging</h2>
+      <p>Unweighted on the 4/0 twistlock, dead straight or it helicopters. Twitch and pause with slack. Check seating every few fish.</p>
+      <h2>Reading the water</h2>
+      <p>Tight birds over small splashes are hardtails. Loose birds over a lot of churn are blues — keep looking. Cast ahead of the school's travel, never run the boat through it. Glass calm and bright sun make them spooky; a little chop helps.</p>
+      <h2>Trolling</h2>
+      <p>5–7 kn through the water. Standard X-Rap blows out past ~5.5; use Magnums for 7. Run 100–200 ft back. Outside-turn hits mean speed up, inside hits slow down.</p>
+      <h2>Weigh-in</h2>
+      <p>8–10am and 7–9pm, Edgartown Jr. Yacht Club. Total length, jaw tip to tail tip.</p>
+    </div>
+  </section>
+</main>
+
+<dialog id="detail" class="detail"><div id="detailBody"></div><button class="chip" onclick="this.closest('dialog').close()">Close</button></dialog>
+
+<nav class="tabs" role="tablist">
+  <button id="t-now" data-tab="now" class="on" role="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Now</button>
+  <button id="t-plan" data-tab="plan" role="tab"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Plan</button>
+  <button id="t-tides" data-tab="tides" role="tab"><svg viewBox="0 0 24 24"><path d="M2 14c3-4 5-4 8 0s5 4 8 0 3-2 4-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Tides</button>
+  <button id="t-wind" data-tab="wind" role="tab"><svg viewBox="0 0 24 24"><path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Wind</button>
+  <button id="t-chart" data-tab="chart" role="tab"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Chart</button>
+  <button id="t-gear" data-tab="gear" role="tab"><svg viewBox="0 0 24 24"><path d="M6 3c5 3 9 9 12 18M14 6l4-1-1 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Gear</button>
+</nav>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

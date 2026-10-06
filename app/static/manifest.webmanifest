@@ -1,0 +1,13 @@
+{
+  "name": "MV Derby Planner",
+  "short_name": "Derby",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#d6e8f5",
+  "theme_color": "#1b3a57",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

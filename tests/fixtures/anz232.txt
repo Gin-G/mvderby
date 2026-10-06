@@ -1,0 +1,38 @@
+Expires:202610030900;;427388
+FZUS51 KBOX 022004
+CWFBOX
+
+Coastal Waters Forecast for Massachusetts and Rhode Island
+National Weather Service Boston/Norton MA
+404 PM EDT Fri Oct 2 2026
+
+Coastal waters from the Merrimack River MA to Watch Hill RI out
+to 60 NM
+
+
+ANZ232-030900-
+Nantucket Sound-
+404 PM EDT Fri Oct 2 2026
+
+...SMALL CRAFT ADVISORY IN EFFECT UNTIL 8 PM EDT THIS EVENING...
+
+.TONIGHT...W winds 15 to 20 kt with gusts up to 25 kt, becoming N
+10 to 15 kt after midnight. Seas 2 to 3 ft. Wave Detail: SW 3 ft
+at 4 seconds and SE 1 foot at 4 seconds. A chance of showers this
+evening. Showers likely after midnight. Patchy fog after
+midnight.
+.SAT...N winds 10 to 15 kt with gusts up to 20 kt. Seas around
+2 ft. Wave Detail: NE 2 ft at 3 seconds and W 2 ft at 6 seconds.
+.SAT NIGHT...NE winds around 10 kt. Seas around 2 ft. Wave
+Detail: NE 2 ft at 3 seconds and SW 1 foot at 5 seconds.
+.SUN...E winds 10 to 15 kt. Seas around 2 ft. Wave Detail: E 2 ft
+at 3 seconds and SW 1 foot at 5 seconds.
+.MON...W winds 5 to 10 kt, increasing to 10 to 15 kt with gusts
+up to 20 kt in the afternoon. Seas 2 to 3 ft.
+.TUE THROUGH WED NIGHT...SW winds 15 to 20 kt. Seas 2 to 3 ft.
+
+Seas are reported as significant wave height, which is the
+average of the highest third of the waves. Individual wave
+heights may be more than twice the significant wave height.
+
+$$

@@ -1,0 +1,8 @@
+.git
+.github
+.devdata
+tests
+tools
+k8s
+**/__pycache__
+.pytest_cache

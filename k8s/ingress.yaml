@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mvderby
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+    external-dns.alpha.kubernetes.io/hostname: mvderby.nickknows.net
+    # Point DNS at the Cloudflare tunnel, like the other public sites
+    external-dns.alpha.kubernetes.io/target: 75c20a42-2dd1-4297-8a51-3aefbcb3f004.cfargotunnel.com
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [mvderby.nickknows.net]
+      secretName: mvderby-tls
+  rules:
+    - host: mvderby.nickknows.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mvderby
+                port: {name: http}

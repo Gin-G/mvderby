@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mvderby
+  labels: {app: mvderby}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}  # RWO volume
+  selector:
+    matchLabels: {app: mvderby}
+  template:
+    metadata:
+      labels: {app: mvderby}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: mvderby
+          image: ghcr.io/gin-g/mvderby:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - {name: TRIP_START, value: "2026-10-09"}
+            - {name: TRIP_END, value: "2026-10-12"}
+            - {name: REFRESH_MINUTES, value: "20"}
+            - {name: DATA_DIR, value: /data}
+            # Pin a NOAA current station if auto-discovery picks the wrong one
+            # (see /api/stations):  CURRENT_HEDGE_FENCE=ACTxxxx:1
+          volumeMounts:
+            - {name: data, mountPath: /data}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 30
+          resources:
+            requests: {cpu: 20m, memory: 96Mi}
+            limits: {memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mvderby-data
