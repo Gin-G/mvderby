@@ -1,5 +1,5 @@
 // Shell + chart cached for offline use; plan is network-first with cache fallback.
-const VERSION = "mvderby-v1";
+const VERSION = "mvderby-v2";
 const SHELL = ["/", "/styles.css", "/app.js", "/chart.webp", "/chart.json", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (e) => {

@@ -101,12 +101,12 @@ def light_factor(t: datetime, sun: dict, mode: str) -> tuple[float, str | None]:
     m_rise = (t - rise).total_seconds() / 60
     m_set = (sset - t).total_seconds() / 60
     if -45 <= m_rise <= 150:
-        return 1.0, "first light"
+        return 1.0, "Light: first light (prime bite)"
     if -20 <= m_set <= 120:
-        return 0.85, "last light"
+        return 0.85, "Light: last light (good bite)"
     if m_rise > 0 and m_set > 0:
         return 0.6, None
-    return (0.15 if mode == "shore" else 0.05), "dark"
+    return (0.15 if mode == "shore" else 0.05), "Light: dark"
 
 
 def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, list[str], list[str]]:
@@ -119,15 +119,15 @@ def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, li
     if spot["mode"] == "shore":
         if exposed and kn > 20:
             f = 0.3
-            reasons.append(f"{compass(d)} {kn:.0f} kn blowing in — hard casting")
+            reasons.append(f"Wind: {compass(d)} {kn:.0f} kn blowing in — hard casting")
         elif exposed and kn > 14:
             f = 0.65
-            reasons.append(f"{compass(d)} {kn:.0f} kn onshore")
+            reasons.append(f"Wind: {compass(d)} {kn:.0f} kn onshore")
         elif exposed and kn >= 6:
-            reasons.append("light chop helps")
+            reasons.append("Wind: light chop — helps")
         elif not exposed:
             if kn >= 10:
-                reasons.append(f"in the lee of a {compass(d)} wind")
+                reasons.append(f"Wind: sheltered from {compass(d)} {kn:.0f} kn (in the lee)")
             f = 1.0 if kn <= 20 else 0.85
     else:
         if gust >= 25 or kn >= 20:
@@ -135,12 +135,12 @@ def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, li
             warn.append(f"{compass(d)} {kn:.0f} G{gust:.0f} kn — rough for the boat")
         elif kn >= 15 and exposed:
             f = 0.7
-            reasons.append(f"{compass(d)} {kn:.0f} kn, sloppy")
+            reasons.append(f"Wind: {compass(d)} {kn:.0f} kn — sloppy")
         elif kn >= 6:
-            reasons.append("some chop — fish less wary")
+            reasons.append("Wind: some chop — fish less wary")
     if kn < 5 and (w.get("cloud") is not None and w["cloud"] < 30):
         f *= 0.9
-        reasons.append("glass calm + sun = spooky fish")
+        reasons.append("Conditions: glass calm and sunny — fish will be spooky")
 
     # wind against tide
     if cur and cur.get("set") is not None and cur["flow"] > 0.35 and spot.get("rip"):
@@ -150,7 +150,7 @@ def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, li
                 warn.append(f"wind against {cur['phase']} at {kn:.0f} kn — rip will be dangerous")
             elif kn >= 8:
                 f *= 1.06
-                reasons.append("wind against tide — rip standing up")
+                reasons.append("Rip: wind against tide — rip standing up")
         dk = spot.get("danger_kn")
         if dk and kn >= dk:
             warn.append(f"{spot['name']}: >{dk} kn wind, settled conditions only")
@@ -210,26 +210,28 @@ def build_plan(*, tides: list[dict], currents: dict[str, list[dict]], wind: dict
                 cur = flow_cached(spot, t)
                 reasons, warn = [], []
                 if cur is None:
-                    cells[spot["id"]] = {"s": None, "r": ["no tide/current data"], "w": []}
+                    cells[spot["id"]] = {"s": None, "r": ["Data: no tide/current data"], "w": []}
                     continue
                 flow = cur["flow"]
                 pref = spot["phase_pref"].get(cur["phase"], 0.8)
                 lf, lr = light_factor(t, sun, spot["mode"])
                 wf, wr, ww = wind_factor(spot, w, cur)
                 score = 94 * (0.12 + 0.88 * flow ** 0.8) * pref * lf * wf
-                phase_txt = cur["phase"]
                 if spot["flow"][0] == "tide":
-                    phase_txt = f"{cur['phase']} ({'outflow' if cur.get('outflow') else 'inflow'})"
-                reasons.append(f"{phase_txt}, {int(flow * 100)}% flow")
-                if cur.get("max_v"):
-                    reasons.append(f"max {cur['max_v']:.1f} kn @ {hm(cur['max_t'])}")
+                    drain = "draining out" if cur.get("outflow") else "pushing in"
+                    reasons.append(f"Tide: {cur['phase']} (water {drain})")
                 else:
-                    reasons.append(f"peak ~{hm(cur['max_t'])}")
+                    reasons.append(f"Current: {cur['phase']}")
+                reasons.append(f"Flow strength: {int(flow * 100)}% of max")
+                if cur.get("max_v"):
+                    reasons.append(f"Peak flow: {cur['max_v']:.1f} kn at {hm(cur['max_t'])}")
+                else:
+                    reasons.append(f"Peak flow: around {hm(cur['max_t'])}")
                 if flow < 0.2:
-                    reasons.append(f"near slack — turns {hm(cur['next_slack'])}")
+                    reasons.append(f"Slack: water nearly still — turns at {hm(cur['next_slack'])}")
                 if pref >= 1.0 and cur["phase"] in spot["phase_pref"] and len(spot["phase_pref"]) > 1 \
                         and min(spot["phase_pref"].values()) < 0.9:
-                    reasons.append("preferred direction here")
+                    reasons.append(f"Direction: {cur['phase']} is the best tide for this spot")
                 if lr:
                     reasons.append(lr)
                 reasons += wr

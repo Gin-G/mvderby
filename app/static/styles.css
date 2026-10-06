@@ -93,12 +93,18 @@ select {
   display: grid; grid-template-columns: 54px 1fr; gap: 10px; background: var(--card);
   padding: 12px; margin-bottom: 8px; border-left: 5px solid var(--heat-2); cursor: pointer;
 }
-.ranked li.top { border-left-color: var(--magenta); }
+.ranked li.best { border-left-color: var(--magenta); }
 .score { font-size: 32px; font-weight: 700; line-height: 1; }
 .score small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-2); margin-top: 4px; }
 .ranked h3 { margin: 0; font-size: 19px; }
 .ranked .why { margin: 3px 0 0; color: var(--ink-2); font-size: 15px; }
 .ranked .lure { margin: 4px 0 0; font-size: 15px; }
+.score .rate { margin-top: 2px; font-weight: 600; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 4px 0 0; font-size: 15px; }
+.facts dt { color: var(--ink-2); font-weight: 600; }
+.facts dd { margin: 0; }
+.facts dd.full { grid-column: 1 / -1; }
+.facts.lure { margin-top: 6px; }
 .warnline { color: var(--warn); font-weight: 600; font-size: 15px; margin: 4px 0 0; }
 .mode { font-size: 13px; color: var(--ink-2); font-weight: 400; margin-left: 6px; }
 

@@ -12,6 +12,13 @@ const hr = (iso) => fmtHour.format(new Date(iso)).replace(" AM", "a").replace(" 
 const dayKey = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
 const compass = (d) => ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(((d % 360) / 22.5)) % 16];
 
+// "Label: value" reasons from the engine -> labeled rows
+const facts = (rs) => `<dl class="facts">${(rs || []).map((r) => {
+  const i = r.indexOf(": ");
+  return i > 0 ? `<dt>${esc(r.slice(0, i))}</dt><dd>${esc(r.slice(i + 2))}</dd>` : `<dd class="full">${esc(r)}</dd>`;
+}).join("")}</dl>`;
+const rating = (s) => s == null ? "" : s >= 80 ? "Excellent" : s >= 65 ? "Good" : s >= 45 ? "Fair" : "Poor";
+
 let PLAN = null;
 const state = { tab: "now", day: null, slot: null, mode: "all", followNow: true };
 
@@ -112,12 +119,12 @@ function renderNow() {
   const ranked = spots.map((s) => ({ s, c: slot.cells[s.id] })).filter((x) => x.c && x.c.s != null)
     .sort((a, b) => b.c.s - a.c.s);
   $("#ranked").innerHTML = ranked.map(({ s, c }, i) => `
-    <li class="${i === 0 ? "top" : ""}" data-spot="${s.id}">
-      <div class="score">${c.s}<small>/100</small></div>
+    <li class="${i === 0 ? "best" : ""}" data-spot="${s.id}">
+      <div class="score">${c.s}<small>/100</small><small class="rate">${rating(c.s)}</small></div>
       <div><h3>${esc(s.name)}<span class="mode">${s.mode}</span></h3>
-        <p class="why">${esc(c.r.join(" · "))}</p>
+        <div class="why">${facts(c.r)}</div>
         ${c.w.map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}
-        ${i < 3 ? `<p class="lure">${esc(nextWindowText(s.id))}</p>` : ""}
+        ${i < 3 ? nextWindowText(s.id) : ""}
       </div></li>`).join("") || `<li><div></div><div>No data for this time.</div></li>`;
   $$("#ranked li[data-spot]").forEach((li) => li.onclick = () => openSpot(li.dataset.spot, state.day, state.slot));
 }
@@ -125,7 +132,7 @@ function renderNow() {
 function nextWindowText(spotId) {
   const day = curDay(); const t = new Date(day.slots[state.slot].t);
   const w = day.windows.find((x) => x.spot === spotId && new Date(x.end) > t);
-  return w ? `Window ${tm(w.start)}–${tm(w.end)}. ${w.lure}` : "";
+  return w ? `<dl class="facts lure"><dt>Best window</dt><dd>${tm(w.start)}–${tm(w.end)}</dd><dt>Lure</dt><dd>${esc(w.lure)}</dd></dl>` : "";
 }
 
 /* ---------------------------------------------------------------- PLAN tab */
@@ -142,9 +149,9 @@ function renderPlan() {
   $("#special").hidden = !day.special; $("#special").textContent = day.special || "";
   const name = Object.fromEntries(PLAN.spots.map((s) => [s.id, s]));
   $("#windows").innerHTML = day.windows.map((w) => `
-    <li data-spot="${w.spot}"><div class="head"><span>${esc(name[w.spot].name)} <span class="mode">${name[w.spot].mode} · ${w.peak}</span></span>
+    <li data-spot="${w.spot}"><div class="head"><span>${esc(name[w.spot].name)} <span class="mode">${name[w.spot].mode} · score ${w.peak} (${rating(w.peak)})</span></span>
       <span class="time">${tm(w.start)}–${tm(w.end)}</span></div>
-      <p>${esc(w.why.join(" · "))}</p><p>${esc(w.lure)}</p>
+      ${facts(w.why)}<dl class="facts"><dt>Lure</dt><dd>${esc(w.lure)}</dd></dl>
       ${w.warn.map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}</li>`).join("");
   const now = nowSlot();
   const head = `<thead><tr><th></th>${day.slots.map((s) => `<th>${s.t.slice(14, 16) === "00" ? hr(s.t) : ""}</th>`).join("")}</tr></thead>`;
@@ -162,8 +169,8 @@ function openSpot(id, dayDate, i) {
   const sp = PLAN.spots.find((s) => s.id === id);
   const day = PLAN.days.find((d) => d.date === dayDate); const slot = day.slots[i]; const c = slot.cells[id];
   $("#detailBody").innerHTML = `<h3>${esc(sp.name)} <span class="mode">${sp.mode}</span></h3>
-    <p><b>${c?.s ?? "—"}/100</b> at ${tm(slot.t)}, ${esc(day.label)}</p>
-    <ul>${(c?.r || []).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+    <p><b>Score ${c?.s ?? "—"}/100</b> ${rating(c?.s) ? `(${rating(c.s)})` : ""} at ${tm(slot.t)}, ${esc(day.label)}</p>
+    ${facts(c?.r)}
     ${(c?.w || []).map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}
     <p>${esc(sp.notes)}</p>
     <p class="hint">Flow from ${esc(sp.flow_ref)} · targets: ${esc(sp.targets.join(", "))}</p>
@@ -280,8 +287,8 @@ function refreshMarkers() {
 function spotCard(id) {
   const sp = PLAN.spots.find((s) => s.id === id); const slot = curDay().slots[state.slot]; const c = slot.cells[id];
   const card = $("#spotCard"); card.hidden = false;
-  card.innerHTML = `<h3>${esc(sp.name)} <span class="mode">${sp.mode} · ${c?.s ?? "—"} at ${tm(slot.t)}</span></h3>
-    <p>${esc((c?.r || []).join(" · "))}</p>${(c?.w || []).map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}
+  card.innerHTML = `<h3>${esc(sp.name)} <span class="mode">${sp.mode} · score ${c?.s ?? "—"} ${rating(c?.s) ? `(${rating(c.s)})` : ""} at ${tm(slot.t)}</span></h3>
+    ${facts(c?.r)}${(c?.w || []).map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}
     <p>${esc(sp.notes)}</p><p><a class="chip" href="${mapsLink(sp)}">Directions</a></p>`;
 }
 function locate() {
