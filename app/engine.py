@@ -7,7 +7,7 @@ from .config import CURRENT_STATIONS, DERBY, SPOTS, TZ
 from .solar import sun_times
 
 STEP = timedelta(minutes=30)
-DAY_START_H, DAY_END_H = 4, 20  # inclusive range of slots shown per day
+NIGHT_FEEDERS = {"blues", "stripers"}  # albies and bonito are daylight fish
 
 
 def _ang(a: float, b: float) -> float:
@@ -96,7 +96,7 @@ class TideModel:
 
 
 # ------------------------------------------------------------------ factors
-def light_factor(t: datetime, sun: dict, mode: str) -> tuple[float, str | None]:
+def light_factor(t: datetime, sun: dict, spot: dict) -> tuple[float, str | None]:
     rise, sset = sun["rise"], sun["set"]
     m_rise = (t - rise).total_seconds() / 60
     m_set = (sset - t).total_seconds() / 60
@@ -106,7 +106,10 @@ def light_factor(t: datetime, sun: dict, mode: str) -> tuple[float, str | None]:
         return 0.85, "Light: last light (good bite)"
     if m_rise > 0 and m_set > 0:
         return 0.6, None
-    return (0.15 if mode == "shore" else 0.05), "Light: dark"
+    shore = spot["mode"] == "shore"
+    if NIGHT_FEEDERS & set(spot.get("targets", [])):
+        return (0.8 if shore else 0.45), "Light: night — blues still feed, albies won't"
+    return (0.15 if shore else 0.05), "Light: dark — albies & bonito don't feed at night"
 
 
 def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, list[str], list[str]]:
@@ -138,6 +141,9 @@ def wind_factor(spot: dict, w: dict | None, cur: dict | None) -> tuple[float, li
             reasons.append(f"Wind: {compass(d)} {kn:.0f} kn — sloppy")
         elif kn >= 6:
             reasons.append("Wind: some chop — fish less wary")
+    if 8 <= kn <= 22 and _in_sector(d, spot.get("push", [])):
+        f *= 1.15
+        reasons.append(f"Bait push: {compass(d)} {kn:.0f} kn pushing bait onto {spot['short']}")
     if kn < 5 and (w.get("cloud") is not None and w["cloud"] < 30):
         f *= 0.9
         reasons.append("Conditions: glass calm and sunny — fish will be spooky")
@@ -201,9 +207,9 @@ def build_plan(*, tides: list[dict], currents: dict[str, list[dict]], wind: dict
         key = d.isoformat()
         sun = sun_by_day[key]
         slots = []
-        t = datetime(d.year, d.month, d.day, DAY_START_H, 0, tzinfo=TZ)
-        end = datetime(d.year, d.month, d.day, DAY_END_H, 0, tzinfo=TZ)
-        while t <= end:
+        t = datetime(d.year, d.month, d.day, tzinfo=TZ)
+        end = t + timedelta(days=1)
+        while t < end:
             w = wind_at(t)
             cells = {}
             for spot in SPOTS:
@@ -214,7 +220,7 @@ def build_plan(*, tides: list[dict], currents: dict[str, list[dict]], wind: dict
                     continue
                 flow = cur["flow"]
                 pref = spot["phase_pref"].get(cur["phase"], 0.8)
-                lf, lr = light_factor(t, sun, spot["mode"])
+                lf, lr = light_factor(t, sun, spot)
                 wf, wr, ww = wind_factor(spot, w, cur)
                 score = 94 * (0.12 + 0.88 * flow ** 0.8) * pref * lf * wf
                 if spot["flow"][0] == "tide":
@@ -246,6 +252,7 @@ def build_plan(*, tides: list[dict], currents: dict[str, list[dict]], wind: dict
             "special": DERBY["specials"].get(key),
             "slots": slots,
             "windows": _windows(slots),
+            "night_windows": _windows(slots, top=8, periods=("evening", "night")),
         })
 
     return {
@@ -282,10 +289,10 @@ def _wind_full(h):
             "pop": h.get("pop"), "temp": h.get("temp")}
 
 
-def _windows(slots, top=8):
+def _windows(slots, top=10, periods=("night", "dawn", "midday", "evening")):
     by_spot = {}
     best_day = max((c["s"] or 0 for s in slots for c in s["cells"].values()), default=0)
-    thresh = max(55, best_day * 0.78)
+    thresh = max(55, best_day * 0.72)
     for spot in SPOTS:
         sid, run = spot["id"], []
         for s in slots + [None]:
@@ -303,22 +310,43 @@ def _windows(slots, top=8):
                 })
                 run = []
     flow_src = {sp["id"]: (sp["flow"][0], sp["flow"][1]) for sp in SPOTS}
-    per_spot = [max(ws, key=lambda w: w["peak"]) for ws in by_spot.values()]
-    per_spot.sort(key=lambda w: -w["peak"])
+    # best two windows per spot, so a night tide can show next to the morning one
+    cands = [w for ws in by_spot.values() for w in sorted(ws, key=lambda w: -w["peak"])[:2]
+             if _period(w["start"]) in periods]
+    cands.sort(key=lambda w: -w["peak"])
     seen, out = {}, []
-    for w in per_spot:
+
+    def take(w):
         k = flow_src[w["spot"]]
-        if seen.get(k, 0) >= 2:
-            continue
+        if w in out or seen.get(k, 0) >= 3:
+            return
         seen[k] = seen.get(k, 0) + 1
         out.append(w)
-    return out[:top]
+
+    # every part of the day gets its best window before the rest fill by score,
+    # so a stacked dawn bite can't crowd out the evening and night tides
+    for period in periods:
+        best = next((w for w in cands if _period(w["start"]) == period), None)
+        if best:
+            take(best)
+    for w in cands:
+        if len(out) >= top:
+            break
+        take(w)
+    return sorted(out, key=lambda w: w["start"])
+
+
+def _period(iso):
+    h = datetime.fromisoformat(iso).hour
+    return "dawn" if 5 <= h < 10 else "midday" if 10 <= h < 16 else "evening" if 16 <= h < 20 else "night"
 
 
 def _lure_hint(spot, slot):
     t = datetime.fromisoformat(slot["t"])
     w = slot.get("wind") or {}
     reasons = " ".join(slot["cells"][spot["id"]]["r"])
+    if "Light: night" in reasons:
+        return "Blues after dark: black needlefish or dark swimmer, slow and steady; 50 lb leader for the teeth"
     if "glass calm" in reasons:
         return "Albie Snax (pearl), 12 lb leader, long casts"
     if spot["mode"] == "boat":

@@ -1,9 +1,9 @@
 {
-  "south": 41.315,
+  "south": 41.25000000000001,
   "west": -70.89,
   "north": 41.58500000000001,
-  "east": -70.385,
-  "width": 3085,
-  "height": 2192,
+  "east": -70.28,
+  "width": 4212,
+  "height": 3073,
   "source": "NOAA Custom Chart 'MV - 2026', generated 2026-09-08"
 }

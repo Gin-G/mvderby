@@ -66,6 +66,7 @@ REGION_BBOX = (41.25, -71.0, 41.62, -70.25)  # south, west, north, east
 #                                               dumps out of the pond/harbor on the drop
 # `phase_pref` weights each phase (1.0 = best).
 # `exposed` = wind-from sectors (deg) that blow onto the spot (bad when strong).
+# `push` = wind-from sectors that drive bait onto the spot (bonus at moderate speed).
 SPOTS = [
     {
         "id": "lighthouse", "short": "Lighthouse", "name": "Edgartown Lighthouse Beach", "mode": "shore",
@@ -120,6 +121,7 @@ SPOTS = [
         "flow": ("current", "wasque"),
         "phase_pref": {"flood": 1.0, "ebb": 1.0},
         "exposed": [(30, 220)],
+        "push": [(290, 345)],
         "targets": ["blues", "albie", "bonito"],
         "notes": "Rip runs to 6 kn. Call Trustees for access status. Cast into the rip line.",
     },
@@ -176,11 +178,25 @@ SPOTS = [
         "lat": 41.3420, "lon": -70.4300,
         "flow": ("current", "wasque"),
         "phase_pref": {"flood": 1.0, "ebb": 1.0},
-        "exposed": [(0, 360)],
+        "exposed": [(20, 260)],  # W through N blows off Chappy/MV
+        "push": [(290, 345)],
         "rip": True,
         "danger_kn": 14,
         "targets": ["blues", "albie"],
         "notes": "Heaviest water on the island. Settled conditions only.",
+    },
+    {
+        "id": "wasque_shoals", "short": "Wasque SE", "name": "Wasque Shoals (SE)", "mode": "boat",
+        "lat": 41.3250, "lon": -70.4000,
+        "flow": ("current", "wasque"),
+        "phase_pref": {"flood": 1.0, "ebb": 1.0},
+        "exposed": [(20, 260)],
+        "push": [(290, 345)],
+        "rip": True,
+        "danger_kn": 14,
+        "targets": ["blues", "albie", "bonito"],
+        "notes": "Shoal edge by bell \"2\" where the Muskeget Channel current piles up. "
+                 "A NW wind lays the sea down here and pushes bait onto the shoals.",
     },
     {
         "id": "middle_ground", "short": "Mid Ground", "name": "Middle Ground", "mode": "boat",

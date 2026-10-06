@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from app import derby_fallback, sources
-from app.config import CURRENT_STATIONS, TZ
-from app.engine import CurrentModel, TideModel, build_plan
+from app.config import CURRENT_STATIONS, SPOTS, TZ
+from app.engine import CurrentModel, TideModel, build_plan, light_factor, wind_factor
 
 FX = Path(__file__).parent / "fixtures"
 DAYS = [date(2026, 10, 9), date(2026, 10, 10), date(2026, 10, 11), date(2026, 10, 12)]
@@ -96,7 +96,8 @@ def test_plan_shape(plan):
     assert [d["date"] for d in plan["days"]] == [d.isoformat() for d in DAYS]
     sat = plan["days"][1]
     assert sat["special"].startswith("BONITO SUPER SATURDAY")
-    assert len(sat["slots"]) == 33
+    assert len(sat["slots"]) == 48  # full day, 30-min steps
+    assert sat["slots"][0]["t"][11:16] == "00:00" and sat["slots"][-1]["t"][11:16] == "23:30"
     assert all(c["s"] is None or 0 <= c["s"] <= 100 for s in sat["slots"] for c in s["cells"].values())
     json.dumps(plan)
 
@@ -132,3 +133,23 @@ def test_windows_exist_and_have_lures(plan):
     for d in plan["days"]:
         assert d["windows"], d["date"]
         assert all(w["lure"] and w["start"] < w["end"] for w in d["windows"])
+
+
+def _spot(sid):
+    return next(s for s in SPOTS if s["id"] == sid)
+
+
+def test_night_penalty_depends_on_target_species():
+    sun = {"rise": datetime(2026, 10, 10, 6, 55, tzinfo=TZ), "set": datetime(2026, 10, 10, 18, 15, tzinfo=TZ)}
+    night = datetime(2026, 10, 10, 22, 0, tzinfo=TZ)
+    blues, _ = light_factor(night, sun, _spot("wasque"))         # targets blues
+    albies, _ = light_factor(night, sun, _spot("ferry_dock"))    # albies/bonito only
+    assert blues >= 0.75 and albies <= 0.2
+
+
+def test_nw_wind_pushes_bait_onto_wasque():
+    nw = {"kn": 12, "dir": 315, "gust": 16, "cloud": 80}
+    f, reasons, _ = wind_factor(_spot("wasque_shoals"), nw, None)
+    assert f > 1.0 and any(r.startswith("Bait push:") for r in reasons)
+    f_ne, reasons_ne, _ = wind_factor(_spot("wasque_shoals"), {**nw, "dir": 45}, None)
+    assert f_ne <= 1.0 and not any(r.startswith("Bait push:") for r in reasons_ne)

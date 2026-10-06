@@ -13,8 +13,8 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).parent))
 from geo import PAGE_H, ll2pdf, pdf2ll  # noqa: E402
 
-SOUTH, WEST, NORTH, EAST = 41.315, -70.89, 41.585, -70.385
-DPI = 230
+SOUTH, WEST, NORTH, EAST = 41.25, -70.89, 41.585, -70.28  # through Wasque shoals + Muskeget
+DPI = 260
 
 src, out = sys.argv[1], Path(sys.argv[2])
 xa, ya = ll2pdf(SOUTH, WEST)

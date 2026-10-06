@@ -20,7 +20,9 @@ const facts = (rs) => `<dl class="facts">${(rs || []).map((r) => {
 const rating = (s) => s == null ? "" : s >= 80 ? "Excellent" : s >= 65 ? "Good" : s >= 45 ? "Fair" : "Poor";
 
 let PLAN = null;
-const state = { tab: "now", day: null, slot: null, mode: "all", followNow: true };
+const state = { tab: "now", day: null, slot: null, mode: "all", followNow: true, owl: false };
+try { state.owl = localStorage.getItem("owl") === "1"; } catch {}
+const hourOf = (iso) => +new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }).format(new Date(iso));
 
 /* ---------------------------------------------------------------- data */
 async function load() {
@@ -148,11 +150,22 @@ function renderPlan() {
   const day = curDay();
   $("#special").hidden = !day.special; $("#special").textContent = day.special || "";
   const name = Object.fromEntries(PLAN.spots.map((s) => [s.id, s]));
-  $("#windows").innerHTML = day.windows.map((w) => `
+  $("#nightOwl").classList.toggle("on", state.owl); $("#nightOwl").setAttribute("aria-pressed", state.owl);
+  $("#owlHint").hidden = !state.owl;
+  let wins = day.windows;
+  if (state.owl) {
+    // tonight = this evening onward + the next calendar day's small hours
+    const next = PLAN.days[PLAN.days.indexOf(day) + 1];
+    const nw = (d) => d.night_windows || d.windows;  // older cached plans lack night_windows
+    wins = [...nw(day).filter((w) => hourOf(w.start) >= 16),
+            ...(next ? nw(next).filter((w) => hourOf(w.start) < 3) : [])];
+  }
+  $("#windows").innerHTML = (wins.map((w) => `
     <li data-spot="${w.spot}"><div class="head"><span>${esc(name[w.spot].name)} <span class="mode">${name[w.spot].mode} · score ${w.peak} (${rating(w.peak)})</span></span>
-      <span class="time">${tm(w.start)}–${tm(w.end)}</span></div>
+      <span class="time">${state.owl && hourOf(w.start) < 3 ? "after midnight · " : ""}${tm(w.start)}–${tm(w.end)}</span></div>
       ${facts(w.why)}<dl class="facts"><dt>Lure</dt><dd>${esc(w.lure)}</dd></dl>
-      ${w.warn.map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}</li>`).join("");
+      ${w.warn.map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}</li>`).join(""))
+    || `<li><p class="hint">No strong ${state.owl ? "evening or night " : ""}windows this day.</p></li>`;
   const now = nowSlot();
   const head = `<thead><tr><th></th>${day.slots.map((s) => `<th>${s.t.slice(14, 16) === "00" ? hr(s.t) : ""}</th>`).join("")}</tr></thead>`;
   const body = PLAN.spots.map((sp) => `<tr><th>${esc(sp.short || sp.name)}</th>${day.slots.map((s, i) => {
@@ -162,7 +175,7 @@ function renderPlan() {
   $("#grid").innerHTML = head + `<tbody>${body}</tbody>`;
   $$("#grid td").forEach((td) => td.onclick = () => openSpot(td.dataset.spot, day.date, +td.dataset.i));
   const wrap = $(".gridwrap"); const firstTd = $("#grid tbody td");
-  if (wrap && firstTd && !wrap.dataset.scrolled) { wrap.scrollLeft = firstTd.offsetWidth * 2; wrap.dataset.scrolled = 1; }
+  if (wrap && firstTd && !wrap.dataset.scrolled) { wrap.scrollLeft = firstTd.offsetWidth * (state.owl ? 32 : 10); /* open at 4p or 5a */ wrap.dataset.scrolled = 1; }
 }
 
 function openSpot(id, dayDate, i) {
@@ -254,7 +267,7 @@ async function buildChart() {
   const fit = () => { box.style.height = Math.max(300, innerHeight - box.getBoundingClientRect().top - 130) + "px"; };
   fit(); addEventListener("resize", fit);
   // start centred on Edgartown / Chappy
-  const [ex, ey] = llToPx(41.40, -70.52); chart.s = 0.45;
+  const [ex, ey] = llToPx(41.40, -70.52); chart.s = 0.4;
   chart.x = box.clientWidth / 2 - ex * chart.s; chart.y = box.clientHeight / 2 - ey * chart.s; applyChart();
 
   const ptrs = new Map(); let last = null;
@@ -335,6 +348,11 @@ function init() {
   $("#nowDay").onchange = (e) => { state.day = e.target.value; state.slot = Math.min(state.slot, curDay().slots.length - 1); state.followNow = false; render(); };
   $("#nowTime").onchange = (e) => { state.slot = +e.target.value; state.followNow = false; render(); };
   $("#nowReset").onclick = () => { const n = nowSlot() || defaultSelection(); state.day = n.day; state.slot = n.slot; state.followNow = !!nowSlot(); render(); };
+  $("#nightOwl").onclick = () => {
+    state.owl = !state.owl; try { localStorage.setItem("owl", state.owl ? "1" : "0"); } catch {}
+    const w = $(".gridwrap"); if (w) delete w.dataset.scrolled;
+    renderPlan();
+  };
   $$(".filters .chip").forEach((b) => b.onclick = () => { state.mode = b.dataset.mode; $$(".filters .chip").forEach((x) => x.classList.toggle("on", x === b)); renderNow(); });
   $("#themeBtn").onclick = () => { const t = document.documentElement.dataset.theme === "night" ? "day" : "night"; localStorage.setItem("theme", t); setTheme(t); };
   render();
