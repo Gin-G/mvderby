@@ -9,4 +9,4 @@ resources:
   - ingress.yaml
 images:
   - name: ghcr.io/gin-g/mvderby
-    newTag: sha-5d80e638e68c2e38eabba1fb236470a14b183f5e
+    newTag: sha-dcd989f912148831ab77eedf6299d36eb00dd205
