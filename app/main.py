@@ -1,12 +1,14 @@
 import asyncio
 import contextlib
+import hashlib
 import logging
 import os
+import re
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import REFRESH_MINUTES
@@ -17,6 +19,34 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"),
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("mvderby")
 STATIC = Path(__file__).parent / "static"
+
+
+def _asset_version() -> str:
+    """Content hash of the static files, stamped onto CSS/JS URLs so every deploy gets
+    URLs no browser or Cloudflare edge has cached before."""
+    h = hashlib.sha1()
+    for f in sorted(STATIC.rglob("*")):
+        if f.is_file() and f.name != "chart.pdf":
+            h.update(f.relative_to(STATIC).as_posix().encode())
+            h.update(f.read_bytes())
+    return h.hexdigest()[:10]
+
+
+ASSET_V = _asset_version()
+INDEX_HTML = re.sub(r'((?:href|src)="/[^"?]+\.(?:css|js))"', rf'\1?v={ASSET_V}"',
+                    (STATIC / "index.html").read_text())
+
+
+class Static(StaticFiles):
+    """Revalidate everything (ETag makes that a cheap 304) so Cloudflare and browsers
+    never serve a stale build; only the versioned vendor libraries are immutable."""
+
+    async def get_response(self, path, scope):
+        r = await super().get_response(path, scope)
+        r.headers["Cache-Control"] = ("public, max-age=31536000, immutable" if path.startswith("vendor/")
+                                      else "no-cache")
+        return r
+
 store = Store()
 _lock = asyncio.Lock()
 
@@ -101,9 +131,9 @@ async def sw():
                         headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def index():
-    return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
+    return HTMLResponse(INDEX_HTML, headers={"Cache-Control": "no-cache"})
 
 
-app.mount("/", StaticFiles(directory=STATIC), name="static")
+app.mount("/", Static(directory=STATIC), name="static")

@@ -37,9 +37,9 @@ CURRENT_STATIONS = {
         "flood_set": 90,
     },
     "wasque": {
-        "label": "Wasque Point (2 mi SW)",
-        "match": ["wasque"],
-        "lat": 41.332, "lon": -70.478,
+        "label": "Muskeget Ch. (W end, off Wasque)",
+        "match": ["wasque", "muskeget channel"],
+        "lat": 41.3483, "lon": -70.42,
         "flood_set": 70,
     },
     "norton": {

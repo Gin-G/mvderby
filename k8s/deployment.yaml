@@ -30,6 +30,8 @@ spec:
             - {name: DATA_DIR, value: /data}
             # Pin a NOAA current station if auto-discovery picks the wrong one
             # (see /api/stations):  CURRENT_HEDGE_FENCE=ACTxxxx:1
+            # No NOAA station is named "Wasque"; Muskeget Channel sits in the rip off the point.
+            - {name: CURRENT_WASQUE, value: "ACT1706:1"}
           volumeMounts:
             - {name: data, mountPath: /data}
           readinessProbe:

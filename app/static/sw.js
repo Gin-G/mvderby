@@ -1,10 +1,20 @@
 // Shell + chart cached for offline use; plan is network-first with cache fallback.
-const VERSION = "mvderby-v5";
+const VERSION = "mvderby-v6";
 const TILES = "mvderby-tiles";  // saved chart tiles survive app updates
-const SHELL = ["/", "/ging-tokens.css", "/styles.css", "/app.js", "/vendor/leaflet/leaflet.js", "/vendor/leaflet/leaflet.css", "/chart.webp", "/chart.json", "/manifest.webmanifest", "/icon.svg"];
+const SHELL = ["/chart.webp", "/chart.json", "/manifest.webmanifest", "/icon.svg"];
+
+// The page links CSS/JS as /file.css?v=<build>; precache exactly those URLs, fresh from the server.
+async function precache() {
+  const c = await caches.open(VERSION);
+  const page = await fetch("/", { cache: "reload" });
+  const html = await page.clone().text();
+  await c.put("/", page);
+  const assets = [...html.matchAll(/(?:href|src)="(\/[^"]+\.(?:css|js)\?v=[^"]+)"/g)].map((m) => m[1]);
+  await Promise.all([...assets, ...SHELL].map((u) => fetch(u, { cache: "reload" }).then((r) => r.ok && c.put(u, r))));
+}
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
