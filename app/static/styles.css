@@ -170,27 +170,58 @@ table.tbl th { font-size: 13px; color: var(--muted); font-weight: 600; }
 .marine b { color: var(--head); }
 .windy iframe { width: 100%; height: 380px; border: 0; }
 
-/* chart */
-.chartbox {
-  position: relative; overflow: hidden; height: 60vh; min-height: 300px;
-  background: #fff; touch-action: none; margin: 0 -16px; cursor: grab;
+/* chart: full-height Leaflet map with overlays */
+.charttab { padding-top: 0; }
+.chartwrap { position: relative; margin: 0 -16px; }
+.chartbox { position: absolute; inset: 0; background: #fff; }
+.leaflet-container { font: inherit; }
+.leaflet-control-attribution { font-size: 11px; }
+:root:not([data-theme="night"]) .leaflet-tile-pane, .leaflet-tile { background: transparent; }
+.chartwhen {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 500;
+  display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 999px;
+  background: var(--bar); color: var(--on-bar); box-shadow: var(--shadow);
 }
-.chartinner { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-.chartinner img { display: block; user-select: none; }
-:root[data-theme="night"] .chartinner img { filter: invert(1) sepia(1) saturate(6) hue-rotate(-50deg) brightness(.55); }
+.chartwhen .iconbtn { width: 36px; height: 36px; font-size: 22px; border-color: transparent; color: inherit; }
+.whenlabel { background: none; border: 0; color: inherit; display: grid; text-align: center; cursor: pointer; padding: 0 4px; line-height: 1.15; }
+.whenlabel small { font-size: 11px; color: var(--on-bar-dim); text-transform: uppercase; letter-spacing: .04em; }
+.whenlabel b { font-size: 17px; white-space: nowrap; }
+.maphint {
+  position: absolute; top: 66px; left: 50%; transform: translateX(-50%); z-index: 500; margin: 0;
+  background: var(--card); color: var(--muted); font-size: 13px; padding: 3px 10px; border-radius: 999px; box-shadow: var(--shadow);
+  pointer-events: none; white-space: nowrap;
+}
+.charttools {
+  position: absolute; left: 10px; bottom: 26px; z-index: 500; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100% - 70px);
+}
+.charttools .chip { background: var(--card); box-shadow: var(--shadow); }
+.charttools .chip.on { background: var(--act-fill); }
+.seg { display: flex; }
+.seg .chip:first-child { border-radius: 999px 0 0 999px; }
+.seg .chip:last-child { border-radius: 0 999px 999px 0; border-left-width: 0; }
+.mkwrap { background: none; border: 0; }
 .mk {
-  position: absolute; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #fff;
-  width: 30px; height: 30px; display: grid; place-items: center; font-weight: 700; font-size: 12px;
-  cursor: pointer; box-shadow: 0 0 0 2px var(--mk-ring);
+  border-radius: 50%; border: 3px solid #fff; width: 30px; height: 30px; display: grid; place-items: center;
+  font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 0 0 0 2px var(--mk-ring);
 }
 .mk.shore { background: var(--mk-shore); color: var(--on-mk-shore); }
 .mk.boat { background: var(--mk-boat); color: var(--on-mk-boat); }
-.mk.me { background: var(--sky-500); width: 18px; height: 18px; }
+.leaflet-interactive.me { fill: var(--sky-500); fill-opacity: 1; stroke: #fff; stroke-width: 3; }
 :root[data-theme="night"] .mk { border-color: var(--text); box-shadow: none; }
-:root[data-theme="night"] .mk.me { background: var(--text); }
+:root[data-theme="night"] .leaflet-interactive.me { fill: var(--text); stroke: var(--text); }
+:root[data-theme="night"] .leaflet-tile-pane, :root[data-theme="night"] .leaflet-image-layer {
+  filter: invert(1) sepia(1) saturate(6) hue-rotate(-50deg) brightness(.55);
+}
+:root[data-theme="night"] .leaflet-container { background: #000; }
+:root[data-theme="night"] .leaflet-control-zoom a, :root[data-theme="night"] .leaflet-control-attribution {
+  background: var(--card); color: var(--text); border-color: var(--rule);
+}
 :root[data-theme="night"] .status.stale { color: var(--warn); }
-.chartbar { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
 .spotcard { background: var(--card); padding: 12px; border-radius: var(--radius); box-shadow: var(--shadow); }
+.spotcard.sheet {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 600; max-height: 60%; overflow: auto;
+}
+.spotcard .close { float: right; width: 32px; height: 32px; font-size: 20px; margin: -4px -4px 0 8px; }
 .spotcard h3 { margin: 0 0 4px; color: var(--head); }
 .spotcard p { margin: 4px 0; font-size: 15px; }
 
@@ -215,6 +246,3 @@ table.tbl th { font-size: 13px; color: var(--muted); font-weight: 600; }
 .tabs svg { width: 24px; height: 24px; }
 .tabs button.on { color: var(--on-bar); font-weight: 700; box-shadow: inset 0 3px 0 var(--on-bar); }
 
-@media (prefers-reduced-motion: no-preference) {
-  .chartinner.anim { transition: transform .2s ease-out; }
-}

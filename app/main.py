@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import REFRESH_MINUTES
+from . import tiles
 from .refresh import Store, refresh
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"),
@@ -68,6 +69,30 @@ async def force_refresh():
 async def stations():
     """Debug: which NOAA stations were matched, and the regional catalogue to pick from."""
     return {"resolved": store.stations, "regional": store.catalogue}
+
+
+@app.get("/tiles/{z}/{x}/{y}.png")
+async def tile(z: int, x: int, y: int):
+    if not tiles.in_region(z, x, y):
+        raise HTTPException(404, "outside the Vineyard chart area")
+    try:
+        path = await tiles.get_tile(z, x, y)
+    except Exception as e:  # noqa: BLE001 — NOAA down; the app falls back to the static chart
+        log.warning("tile %s/%s/%s failed: %s", z, x, y, e)
+        raise HTTPException(502, "NOAA chart service unavailable") from e
+    return FileResponse(path, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=2592000"})
+
+
+@app.get("/api/tiles")
+async def tile_list(max_z: int = 14):
+    """Every tile in the chart area up to max_z, for the app's 'Save for offline'."""
+    out = []
+    for z in range(tiles.MIN_Z, min(max_z, tiles.MAX_Z) + 1):
+        xs, ys = tiles.tile_range(z, tiles.SAVE_BOUNDS)
+        out += [f"/tiles/{z}/{x}/{y}.png" for x in xs for y in ys]
+    return {"tiles": out, "bounds": [[tiles.SOUTH, tiles.WEST], [tiles.NORTH, tiles.EAST]],
+            "min_z": tiles.MIN_Z, "max_z": tiles.MAX_Z}
 
 
 @app.get("/sw.js")

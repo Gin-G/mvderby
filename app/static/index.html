@@ -10,6 +10,7 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="/ging-tokens.css">
 <link rel="stylesheet" href="/styles.css">
 </head>
@@ -65,20 +66,24 @@
     <div id="windy" class="windy"></div>
   </section>
 
-  <section id="tab-chart" class="tab" hidden aria-labelledby="t-chart">
-    <div id="chartBox" class="chartbox" tabindex="0" aria-label="Chart. Drag to pan, pinch or scroll to zoom.">
-      <div id="chartInner" class="chartinner">
-        <img id="chartImg" src="/chart.webp" alt="NOAA chart of Martha's Vineyard" draggable="false">
-        <div id="markers"></div>
+  <section id="tab-chart" class="tab charttab" hidden aria-labelledby="t-chart">
+    <div class="chartwrap">
+      <div id="chartBox" class="chartbox" aria-label="Chart. Drag to pan, pinch or scroll to zoom."></div>
+      <div class="chartwhen" role="group" aria-label="Ratings time">
+        <button id="slotPrev" class="iconbtn" aria-label="30 minutes earlier">‹</button>
+        <button id="slotLabel" class="whenlabel" title="Jump to now"><small>Ratings for</small><b id="slotText"></b></button>
+        <button id="slotNext" class="iconbtn" aria-label="30 minutes later">›</button>
       </div>
+      <p id="depthHint" class="maphint" hidden>Zoom in to see depths</p>
+      <div class="charttools">
+        <div class="seg" role="group" aria-label="Chart source">
+          <button data-src="live" class="chip">Live</button><button data-src="offline" class="chip">Offline</button>
+        </div>
+        <button id="saveTiles" class="chip">Save for offline</button>
+        <button id="locate" class="chip">Show me</button>
+      </div>
+      <div id="spotCard" class="spotcard sheet" hidden></div>
     </div>
-    <div class="chartbar">
-      <button id="zoomIn" class="iconbtn" aria-label="Zoom in">+</button>
-      <button id="zoomOut" class="iconbtn" aria-label="Zoom out">−</button>
-      <button id="locate" class="chip">Show me</button>
-      <a class="chip" href="/chart.pdf">Full chart PDF</a>
-    </div>
-    <div id="spotCard" class="spotcard" hidden></div>
   </section>
 
   <section id="tab-gear" class="tab" hidden aria-labelledby="t-gear">
@@ -114,6 +119,7 @@
   <button id="t-gear" data-tab="gear" role="tab"><svg viewBox="0 0 24 24"><path d="M6 3c5 3 9 9 12 18M14 6l4-1-1 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Gear</button>
 </nav>
 
+<script src="/vendor/leaflet/leaflet.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

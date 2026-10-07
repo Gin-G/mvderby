@@ -237,80 +237,132 @@ function renderWind() {
 }
 
 /* ---------------------------------------------------------------- CHART tab */
-const chart = { meta: null, s: 0.3, x: 0, y: 0, built: false };
-const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
-function llToPx(lat, lon) {
-  const m = chart.meta;
-  const x = (lon - m.west) / (m.east - m.west) * m.width;
-  const y = (merc(m.north) - merc(lat)) / (merc(m.north) - merc(m.south)) * m.height;
-  return [x, y];
-}
-function applyChart(anim) {
-  const inner = $("#chartInner"); inner.classList.toggle("anim", !!anim);
-  inner.style.transform = `translate(${chart.x}px, ${chart.y}px) scale(${chart.s})`;
-  $$(".mk", inner).forEach((m) => m.style.transform = `translate(-50%,-50%) scale(${1 / chart.s})`);
-}
-function zoomAt(f, cx, cy) {
-  const ns = Math.min(3, Math.max(0.12, chart.s * f));
-  chart.x = cx - (cx - chart.x) * (ns / chart.s); chart.y = cy - (cy - chart.y) * (ns / chart.s); chart.s = ns; applyChart();
-}
-async function buildChart() {
-  if (chart.built) return;
-  chart.meta = await (await fetch("/chart.json")).json();
-  const box = $("#chartBox");
-  const slot = curDay().slots[state.slot];
-  $("#markers").innerHTML = PLAN.spots.map((sp) => {
-    const [x, y] = llToPx(sp.lat, sp.lon); const sc = slot.cells[sp.id]?.s;
-    return `<button class="mk ${sp.mode}" style="left:${x}px;top:${y}px" data-spot="${sp.id}" aria-label="${esc(sp.name)}">${sc ?? ""}</button>`;
-  }).join("");
-  $$(".mk").forEach((b) => b.onclick = (e) => { e.stopPropagation(); spotCard(b.dataset.spot); });
-  const fit = () => { box.style.height = Math.max(300, innerHeight - box.getBoundingClientRect().top - 130) + "px"; };
-  fit(); addEventListener("resize", fit);
-  // start centred on Edgartown / Chappy
-  const [ex, ey] = llToPx(41.40, -70.52); chart.s = 0.4;
-  chart.x = box.clientWidth / 2 - ex * chart.s; chart.y = box.clientHeight / 2 - ey * chart.s; applyChart();
+// Live = NOAA ENC tiles via /tiles (redrawn per zoom, so soundings declutter).
+// Offline = the static NOAA chart image. The static image always sits underneath,
+// so any live tile that can't load (no signal, not saved) shows the static chart.
+const TILE_CACHE = "mvderby-tiles";
+const chart = { map: null, live: null, markers: {}, me: null, built: false };
+let chartSrc = "live";
+try { chartSrc = localStorage.getItem("chartSrc") || (navigator.onLine ? "live" : "offline"); } catch {}
 
-  const ptrs = new Map(); let last = null;
-  box.addEventListener("pointerdown", (e) => { box.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); last = null; });
-  box.addEventListener("pointermove", (e) => {
-    if (!ptrs.has(e.pointerId)) return;
-    const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, e);
-    if (ptrs.size === 1) { chart.x += e.clientX - prev.clientX; chart.y += e.clientY - prev.clientY; applyChart(); }
-    else if (ptrs.size === 2) {
-      const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      const r = box.getBoundingClientRect();
-      if (last) zoomAt(d / last, (a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top);
-      last = d;
-    }
-  });
-  const up = (e) => { ptrs.delete(e.pointerId); last = null; };
-  box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
-  box.addEventListener("wheel", (e) => { e.preventDefault(); const r = box.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
-  const mid = () => [box.clientWidth / 2, box.clientHeight / 2];
-  $("#zoomIn").onclick = () => zoomAt(1.4, ...mid());
-  $("#zoomOut").onclick = () => zoomAt(1 / 1.4, ...mid());
-  $("#locate").onclick = locate;
+async function buildChart() {
+  if (chart.built) { chart.map.invalidateSize(); return; }
   chart.built = true;
+  const meta = await (await fetch("/chart.json")).json();
+  const fit = () => {
+    const wrap = $(".chartwrap"); const tabs = $(".tabs");
+    wrap.style.height = Math.max(320, innerHeight - wrap.getBoundingClientRect().top - tabs.offsetHeight) + "px";
+    chart.map?.invalidateSize();
+  };
+  fit(); addEventListener("resize", fit);
+  const map = chart.map = L.map("chartBox", {
+    minZoom: 9, maxZoom: 15, zoomSnap: 0.5, zoomControl: false,
+    maxBounds: [[41.1, -71.35], [41.75, -69.9]],
+  });
+  map.attributionControl.setPrefix("Leaflet");
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+  map.createPane("static").style.zIndex = 150;  // under the live tiles (tilePane is 200)
+  L.imageOverlay("/chart.webp", [[meta.south, meta.west], [meta.north, meta.east]],
+    { pane: "static", attribution: "NOAA" }).addTo(map);
+  chart.live = L.tileLayer("/tiles/{z}/{x}/{y}.png", {
+    minZoom: 9, maxZoom: 15, bounds: [[41.15, -71.3], [41.7, -69.95]], attribution: "NOAA ENC",
+  });
+  map.setView([41.40, -70.52], 11);
+
+  for (const sp of PLAN.spots) {
+    const m = L.marker([sp.lat, sp.lon], { icon: L.divIcon({
+      className: "mkwrap", iconSize: [30, 30],
+      html: `<span class="mk ${sp.mode}" role="button" aria-label="${esc(sp.name)}"></span>` }) });
+    m.on("click", () => spotCard(sp.id)).addTo(map);
+    chart.markers[sp.id] = m;
+  }
+  map.on("click", () => { $("#spotCard").hidden = true; });
+  // NOAA only draws soundings once a tile is ~10 m/px (zoom 14)
+  map.on("zoomend", depthHint);
+
+  $$(".seg .chip").forEach((b) => b.onclick = () => setChartSrc(b.dataset.src, true));
+  setChartSrc(chartSrc);
+  $("#slotPrev").onclick = () => stepSlot(-1);
+  $("#slotNext").onclick = () => stepSlot(1);
+  $("#slotLabel").onclick = () => { const n = nowSlot(); if (n) { state.day = n.day; state.slot = n.slot; state.followNow = true; render(); } };
+  $("#locate").onclick = locate;
+  $("#saveTiles").onclick = saveTiles;
+  tilesSavedLabel();
 }
+
+function setChartSrc(src, remember) {
+  chartSrc = src;
+  if (remember) try { localStorage.setItem("chartSrc", src); } catch {}
+  if (src === "live") chart.live.addTo(chart.map); else chart.map.removeLayer(chart.live);
+  $$(".seg .chip").forEach((b) => b.classList.toggle("on", b.dataset.src === src));
+  depthHint();
+}
+function depthHint() { $("#depthHint").hidden = !(chartSrc === "live" && chart.map.getZoom() < 14); }
+
+function stepSlot(d) {
+  let di = PLAN.days.indexOf(curDay()); let i = state.slot + d;
+  if (i < 0 && di > 0) { di -= 1; i = PLAN.days[di].slots.length - 1; }
+  if (i >= PLAN.days[di].slots.length && di < PLAN.days.length - 1) { di += 1; i = 0; }
+  state.day = PLAN.days[di].date; state.slot = Math.max(0, Math.min(i, PLAN.days[di].slots.length - 1));
+  state.followNow = false; render();
+}
+
 function refreshMarkers() {
-  if (!chart.built) return;
-  const slot = curDay().slots[state.slot];
-  $$(".mk[data-spot]").forEach((b) => b.textContent = slot.cells[b.dataset.spot]?.s ?? "");
+  if (!chart.map) return;
+  const day = curDay(); const slot = day.slots[state.slot];
+  const n = nowSlot(); const isNow = n && n.day === day.date && n.slot === state.slot;
+  $("#slotText").textContent = `${day.label} · ${tm(slot.t)}${isNow ? " (now)" : ""}`;
+  for (const [id, m] of Object.entries(chart.markers)) {
+    const el = m.getElement()?.querySelector(".mk"); if (!el) continue;
+    el.textContent = slot.cells[id]?.s ?? "";
+  }
+  if (!$("#spotCard").hidden && $("#spotCard").dataset.spot) spotCard($("#spotCard").dataset.spot);
 }
+
+async function saveTiles() {
+  const btn = $("#saveTiles");
+  if (!("caches" in window)) { btn.textContent = "Offline saving not supported"; return; }
+  btn.disabled = true;
+  try {
+    const { tiles } = await (await fetch("/api/tiles")).json();
+    const cache = await caches.open(TILE_CACHE);
+    let done = 0, failed = 0; const queue = [...tiles];
+    const worker = async () => {
+      while (queue.length) {
+        const u = queue.shift();
+        try {
+          if (!(await cache.match(u))) { const r = await fetch(u); if (r.ok) await cache.put(u, r); else failed++; }
+        } catch { failed++; }
+        done++; if (done % 10 === 0 || done === tiles.length) btn.textContent = `Saving ${done}/${tiles.length}…`;
+      }
+    };
+    await Promise.all(Array.from({ length: 6 }, worker));
+    try { localStorage.setItem("tilesSaved", JSON.stringify({ at: Date.now(), n: tiles.length - failed })); } catch {}
+    btn.textContent = failed ? `Saved ${tiles.length - failed} (${failed} failed, tap to retry)` : "Saved for offline ✓";
+  } catch {
+    btn.textContent = "Save failed — need signal";
+  }
+  btn.disabled = false;
+}
+function tilesSavedLabel() {
+  try { const s = JSON.parse(localStorage.getItem("tilesSaved")); if (s) $("#saveTiles").textContent = "Saved for offline ✓"; } catch {}
+}
+
 function spotCard(id) {
   const sp = PLAN.spots.find((s) => s.id === id); const slot = curDay().slots[state.slot]; const c = slot.cells[id];
-  const card = $("#spotCard"); card.hidden = false;
-  card.innerHTML = `<h3>${esc(sp.name)} <span class="mode">${sp.mode} · score ${c?.s ?? "—"} ${rating(c?.s) ? `(${rating(c.s)})` : ""} at ${tm(slot.t)}</span></h3>
+  const card = $("#spotCard"); card.hidden = false; card.dataset.spot = id;
+  card.innerHTML = `<button class="close iconbtn" aria-label="Close">×</button>
+    <h3>${esc(sp.name)} <span class="mode">${sp.mode} · score ${c?.s ?? "—"} ${rating(c?.s) ? `(${rating(c.s)})` : ""} at ${tm(slot.t)}</span></h3>
     ${facts(c?.r)}${(c?.w || []).map((x) => `<p class="warnline">${esc(x)}</p>`).join("")}
     <p>${esc(sp.notes)}</p><p><a class="chip" href="${mapsLink(sp)}">Directions</a></p>`;
+  $(".close", card).onclick = () => { card.hidden = true; };
 }
 function locate() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition((p) => {
-    const [x, y] = llToPx(p.coords.latitude, p.coords.longitude);
-    let me = $(".mk.me"); if (!me) { me = document.createElement("div"); me.className = "mk me"; $("#markers").append(me); }
-    me.style.left = x + "px"; me.style.top = y + "px";
-    const box = $("#chartBox"); chart.x = box.clientWidth / 2 - x * chart.s; chart.y = box.clientHeight / 2 - y * chart.s; applyChart(true);
+    const ll = [p.coords.latitude, p.coords.longitude];
+    if (!chart.me) chart.me = L.circleMarker(ll, { radius: 8, className: "me" }).addTo(chart.map);
+    chart.me.setLatLng(ll); chart.map.flyTo(ll, Math.max(chart.map.getZoom(), 13));
   }, () => { $("#locate").textContent = "Location unavailable"; }, { enableHighAccuracy: true, timeout: 10000 });
 }
 

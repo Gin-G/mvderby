@@ -186,7 +186,7 @@ SPOTS = [
         "notes": "Heaviest water on the island. Settled conditions only.",
     },
     {
-        "id": "wasque_shoals", "short": "Wasque SE", "name": "Wasque Shoals (SE)", "mode": "boat",
+        "id": "mutton_shoal", "short": "Mutton Sh.", "name": "Mutton Shoal (SE of Wasque)", "mode": "boat",
         "lat": 41.3250, "lon": -70.4000,
         "flow": ("current", "wasque"),
         "phase_pref": {"flood": 1.0, "ebb": 1.0},
@@ -195,8 +195,8 @@ SPOTS = [
         "rip": True,
         "danger_kn": 14,
         "targets": ["blues", "albie", "bonito"],
-        "notes": "Shoal edge by bell \"2\" where the Muskeget Channel current piles up. "
-                 "A NW wind lays the sea down here and pushes bait onto the shoals.",
+        "notes": "West edge of Mutton Shoal by bell \"2\", where the Muskeget Channel current "
+                 "(3.5 kn) piles up. A NW wind lays the sea down and pushes bait onto the shoal.",
     },
     {
         "id": "middle_ground", "short": "Mid Ground", "name": "Middle Ground", "mode": "boat",

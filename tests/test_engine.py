@@ -149,7 +149,7 @@ def test_night_penalty_depends_on_target_species():
 
 def test_nw_wind_pushes_bait_onto_wasque():
     nw = {"kn": 12, "dir": 315, "gust": 16, "cloud": 80}
-    f, reasons, _ = wind_factor(_spot("wasque_shoals"), nw, None)
+    f, reasons, _ = wind_factor(_spot("mutton_shoal"), nw, None)
     assert f > 1.0 and any(r.startswith("Bait push:") for r in reasons)
-    f_ne, reasons_ne, _ = wind_factor(_spot("wasque_shoals"), {**nw, "dir": 45}, None)
+    f_ne, reasons_ne, _ = wind_factor(_spot("mutton_shoal"), {**nw, "dir": 45}, None)
     assert f_ne <= 1.0 and not any(r.startswith("Bait push:") for r in reasons_ne)
