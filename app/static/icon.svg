@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#1b3a57"/>
-  <path d="M60 330c50-40 95-40 140 0s95 40 140 0 75-35 112-10" fill="none" stroke="#d6e8f5" stroke-width="22" stroke-linecap="round"/>
-  <path d="M120 236c60-70 170-90 252-30-30 4-52 18-66 40 8-34-10-58-44-62 10 22 4 42-16 56-36-30-82-34-126-4Z" fill="#f2dfa6"/>
-  <circle cx="356" cy="214" r="9" fill="#1b3a57"/>
-  <path d="M372 206l52-36-10 46 10 46-52-36" fill="#f2dfa6"/>
+  <!-- ging brand: hair fish on warm near-black, sky (eyes) water -->
+  <rect width="512" height="512" rx="96" fill="#1a1411"/>
+  <path d="M60 330c50-40 95-40 140 0s95 40 140 0 75-35 112-10" fill="none" stroke="#86bfe5" stroke-width="22" stroke-linecap="round"/>
+  <path d="M120 236c60-70 170-90 252-30-30 4-52 18-66 40 8-34-10-58-44-62 10 22 4 42-16 56-36-30-82-34-126-4Z" fill="#bb925c"/>
+  <circle cx="356" cy="214" r="9" fill="#1a1411"/>
+  <path d="M372 206l52-36-10 46 10 46-52-36" fill="#bb925c"/>
 </svg>

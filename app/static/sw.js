@@ -1,6 +1,6 @@
 // Shell + chart cached for offline use; plan is network-first with cache fallback.
-const VERSION = "mvderby-v3";
-const SHELL = ["/", "/styles.css", "/app.js", "/chart.webp", "/chart.json", "/manifest.webmanifest", "/icon.svg"];
+const VERSION = "mvderby-v4";
+const SHELL = ["/", "/ging-tokens.css", "/styles.css", "/app.js", "/chart.webp", "/chart.json", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

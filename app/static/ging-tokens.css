@@ -1,0 +1,156 @@
+/* ==========================================================================
+   ging-tokens.css — colors and design tokens only, no element styles.
+   Use this on sites that already have their own stylesheet: reference the
+   raw scales (--hair-*, --peach-*, --sky-*, --ink-*) or the semantic
+   --g-* tokens from your own CSS. ging.css imports this file.
+
+   Light mode: skin is the page, hair fills bars and buttons, eyes are links.
+   Dark mode:  hair is the type on warm near-black, eyes are the buttons.
+   Follows the OS; force with <html data-theme="light|dark">.
+   ========================================================================== */
+
+/* 1. Palette ------------------------------------------------------------- */
+:root {
+  /* Scales are built in OKLCH so lightness steps are perceptually even. */
+
+  /* Hair — anchored on #bb925c (400), eyedropped from a photo. Hue eases from
+     golden (73°) toward amber in the darks so they stay warm instead of olive.
+     400 is the signature color. Too light for text on skin (1.8:1); use it as
+     a fill with dark text, or as text on dark backgrounds (6.4:1). */
+  --hair-50:  #fcf4e8;
+  --hair-100: #f5e5cf;
+  --hair-200: #e7cda7;
+  --hair-300: #d5b17f;
+  --hair-400: #bb925c;
+  --hair-500: #a37640;
+  --hair-600: #875c2c;
+  --hair-700: #6c461f;
+  --hair-800: #513215;
+  --hair-900: #341e0c;
+
+  /* Peach — the skin (sampled: chest ≈ 300, face ≈ 400).
+     Surfaces, borders, highlights. Not for text on light backgrounds below 600. */
+  --peach-50:  #fbf3ef;
+  --peach-100: #f4e4da;
+  --peach-200: #e8cab8;
+  --peach-300: #d7ad94;
+  --peach-400: #c08f72;
+  --peach-500: #a57357;
+  --peach-600: #865a43;
+  --peach-700: #6a4634;
+  --peach-800: #4f3326;
+  --peach-900: #311f17;
+
+  /* Sky — the eyes (sampled iris hue ≈ 258°, nudged toward the complement of
+     the warm palette). Links, buttons, focus rings — not large areas. */
+  --sky-50:  #eef7fc;
+  --sky-100: #d7ecf8;
+  --sky-200: #afd7f1;
+  --sky-300: #86bfe5;
+  --sky-400: #61a3d0;
+  --sky-500: #4687b6;
+  --sky-600: #336b96;
+  --sky-700: #275378;
+  --sky-800: #1e3d59;
+  --sky-900: #122538;
+
+  /* Warm neutrals — browns pulled toward the same hue so grays never look cold. */
+  --ink-50:  #f6e9e0;
+  --ink-200: #c4a798;
+  --ink-500: #6e5448;
+  --ink-700: #4d3a2e;
+  --ink-800: #261d19;
+  --ink-900: #1a1411;
+  --ink-950: #2b201b;
+
+  --g-font-sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --g-font-serif: ui-serif, Georgia, "Times New Roman", serif;
+  --g-font-mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --g-radius:    10px;
+  --g-radius-sm: 6px;
+  --g-space:     1rem;
+}
+
+/* 2. Light mode (default) ------------------------------------------------ */
+:root {
+  color-scheme: light;
+  --g-bg:              var(--peach-200);
+  --g-surface:         var(--peach-100);
+  --g-surface-alt:     var(--peach-50);
+  --g-border:          var(--peach-300);
+  --g-bar:             var(--hair-400);     /* nav bars, bands */
+  --g-on-bar:          var(--ink-900);
+  --g-text:            var(--hair-900);     /* 10.2:1 */
+  --g-text-muted:      var(--ink-700);      /* 6.9:1 */
+  --g-highlight:       var(--ink-900);      /* headings */
+  --g-brand:           var(--hair-400);     /* borders, rules, marks */
+  --g-primary:         var(--hair-400);     /* primary buttons: hair fill */
+  --g-primary-hover:   var(--hair-300);
+  --g-on-primary:      var(--ink-900);      /* 6.4:1 */
+  --g-accent:          var(--sky-700);      /* links (5.2:1) */
+  --g-accent-hover:    var(--sky-800);
+  --g-accent-soft:     var(--sky-100);
+  --g-on-accent:       #ffffff;
+  --g-secondary:       var(--sky-700);      /* secondary buttons: eye fill */
+  --g-secondary-hover: var(--sky-800);
+  --g-secondary-soft:  var(--sky-100);
+  --g-on-secondary:    #ffffff;             /* 8.1:1 */
+  --g-focus-ring:      0 0 0 3px color-mix(in srgb, var(--sky-500) 55%, transparent);
+  --g-shadow:          0 1px 2px rgb(52 30 12 / 0.08), 0 4px 16px rgb(52 30 12 / 0.08);
+}
+
+/* 3. Dark mode ----------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --g-bg:              var(--ink-900);
+    --g-surface:         var(--ink-800);
+    --g-surface-alt:     #31251f;
+    --g-border:          #3e2f28;
+    --g-bar:             var(--ink-800);
+    --g-on-bar:          var(--hair-400);
+    --g-text:            var(--hair-200);     /* 11.9:1 */
+    --g-text-muted:      var(--hair-400);     /* the hair color itself, 6.4:1 */
+    --g-highlight:       var(--hair-300);     /* headings, 9.1:1 */
+    --g-brand:           var(--hair-400);
+    --g-primary:         var(--sky-300);      /* primary buttons: eye fill */
+    --g-primary-hover:   var(--sky-200);
+    --g-on-primary:      var(--ink-900);      /* 9.2:1 */
+    --g-accent:          var(--sky-300);      /* links, 9.2:1 */
+    --g-accent-hover:    var(--sky-200);
+    --g-accent-soft:     #1e2633;
+    --g-on-accent:       var(--ink-900);
+    --g-secondary:       var(--hair-400);     /* secondary buttons: hair fill */
+    --g-secondary-hover: var(--hair-300);
+    --g-secondary-soft:  #33281c;
+    --g-on-secondary:    var(--ink-900);      /* 6.4:1 */
+    --g-focus-ring:      0 0 0 3px color-mix(in srgb, var(--sky-300) 55%, transparent);
+    --g-shadow:          0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --g-bg:              var(--ink-900);
+  --g-surface:         var(--ink-800);
+  --g-surface-alt:     #31251f;
+  --g-border:          #3e2f28;
+  --g-bar:             var(--ink-800);
+  --g-on-bar:          var(--hair-400);
+  --g-text:            var(--hair-200);     /* 11.9:1 */
+  --g-text-muted:      var(--hair-400);     /* the hair color itself, 6.4:1 */
+  --g-highlight:       var(--hair-300);     /* headings, 9.1:1 */
+  --g-brand:           var(--hair-400);
+  --g-primary:         var(--sky-300);      /* primary buttons: eye fill */
+  --g-primary-hover:   var(--sky-200);
+  --g-on-primary:      var(--ink-900);      /* 9.2:1 */
+  --g-accent:          var(--sky-300);      /* links, 9.2:1 */
+  --g-accent-hover:    var(--sky-200);
+  --g-accent-soft:     #1e2633;
+  --g-on-accent:       var(--ink-900);
+  --g-secondary:       var(--hair-400);     /* secondary buttons: hair fill */
+  --g-secondary-hover: var(--hair-300);
+  --g-secondary-soft:  #33281c;
+  --g-on-secondary:    var(--ink-900);      /* 6.4:1 */
+  --g-focus-ring:      0 0 0 3px color-mix(in srgb, var(--sky-300) 55%, transparent);
+  --g-shadow:          0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+}
