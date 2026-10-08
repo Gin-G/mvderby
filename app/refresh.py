@@ -106,7 +106,7 @@ async def refresh(store: Store) -> dict:
         status["tides"] = {**status.get("tides", {}), "source": "Derby PDF (fallback)"}
     for key in CURRENT_STATIONS:
         if not currents.get(key):
-            fb = derby_fallback.slack_events(key)
+            fb = derby_fallback.slack_events(CURRENT_STATIONS[key].get("derby", key))
             if fb:
                 currents[key] = fb
                 status[f"cur_{key}"] = {**status.get(f"cur_{key}", {}),

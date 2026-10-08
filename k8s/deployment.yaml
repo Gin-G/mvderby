@@ -32,6 +32,7 @@ spec:
             # (see /api/stations):  CURRENT_HEDGE_FENCE=ACTxxxx:1
             # No NOAA station is named "Wasque"; Muskeget Channel sits in the rip off the point.
             - {name: CURRENT_WASQUE, value: "ACT1706:1"}
+            - {name: CURRENT_MUTTON, value: "ACT1701:1"}  # Muskeget Rock, 1.3 mi SW = Mutton Shoal
           volumeMounts:
             - {name: data, mountPath: /data}
           readinessProbe:

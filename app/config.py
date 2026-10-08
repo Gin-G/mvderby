@@ -42,6 +42,13 @@ CURRENT_STATIONS = {
         "lat": 41.3483, "lon": -70.42,
         "flood_set": 70,
     },
+    "mutton": {
+        "label": "Mutton Shoal (Muskeget Rock 1.3 mi SW)",
+        "match": ["muskeget rock"],
+        "lat": 41.32, "lon": -70.3933,
+        "flood_set": 24,
+        "derby": "wasque",  # no Derby PDF table here; Wasque's slack is ~30 min off
+    },
     "norton": {
         "label": "Norton Pt / Tashmoo (0.5 mi N)",
         "match": ["norton point"],
@@ -188,7 +195,7 @@ SPOTS = [
     {
         "id": "mutton_shoal", "short": "Mutton Sh.", "name": "Mutton Shoal (SE of Wasque)", "mode": "boat",
         "lat": 41.3250, "lon": -70.4000,
-        "flow": ("current", "wasque"),
+        "flow": ("current", "mutton"),
         "phase_pref": {"flood": 1.0, "ebb": 1.0},
         "exposed": [(20, 260)],
         "push": [(290, 345)],
